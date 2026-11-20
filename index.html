@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>悩みモンスター</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<header class="top">
+  <div class="brand">悩みモンスター</div>
+  <div class="me"><span class="lv" id="lv">Lv1</span><div class="bars"><div class="bar hp"><i id="hpBar"></i></div><div class="bar exp"><i id="expBar"></i></div></div></div>
+  <button class="pill" id="noteBtn">ノート</button>
+</header>
+<div id="mapWrap">
+  <canvas id="map"></canvas>
+  <div id="toast"></div>
+  <div id="hint">行きたい方向をタップ。押しっぱなしで歩き続けます</div>
+</div>
+
+<div id="battle" class="overlay"><div class="sheet">
+  <div class="foe">
+    <div class="foeInfo">
+      <div class="chips"><span class="chip" id="bCat"></span><span class="chip ghost" id="bOwner"></span></div>
+      <div class="bname" id="bName"></div>
+      <div class="hp"><i id="bHp"></i></div>
+    </div>
+    <canvas id="mon" width="96" height="96"></canvas>
+  </div>
+  <div class="mine"><span>こころのHP</span><div class="hp me"><i id="bMyHp"></i></div><span id="bMyTxt"></span></div>
+  <div class="msg" id="msg"></div>
+  <div class="acts" id="acts"></div>
+</div></div>
+
+<div id="note" class="overlay"><div class="nwrap" id="noteBody"></div></div>
+
+<div id="intro"><div id="introBody"></div></div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

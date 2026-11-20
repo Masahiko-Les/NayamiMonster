@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>悩みモンスター</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f3ec;--ink:#2b2d42;--sub:#7a7f8f;--line:#e6e1d6;--card:#fff;--accent:#ef7b5c;--good:#4fa38a}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:'M PLUS Rounded 1c',system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
+body{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+button{font-family:inherit;cursor:pointer}
+.top{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border-bottom:1px solid var(--line)}
+.brand{font-weight:800;font-size:16px;flex:1;letter-spacing:.5px}
+.me{display:flex;align-items:center;gap:8px}
+.lv{font-weight:800;font-size:13px;background:var(--ink);color:#fff;border-radius:999px;padding:3px 9px}
+.bars{display:flex;flex-direction:column;gap:3px;width:78px}
+.bar{height:6px;border-radius:9px;background:#eee;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:9px;transition:width .4s}
+.bar.hp i{background:var(--good)}.bar.exp i{background:#f2b84b}
+.pill{background:var(--accent);color:#fff;border:none;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:700;box-shadow:0 2px 0 #c95f43}
+.pill:active{transform:translateY(1px);box-shadow:none}
+#mapWrap{position:relative;flex:1;min-height:0}
+#map{width:100%;height:100%;display:block;touch-action:none}
+#hint{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:rgba(43,45,66,.78);color:#fff;font-size:12px;padding:7px 12px;border-radius:999px;white-space:nowrap;pointer-events:none;transition:opacity .6s}
+#toast{position:absolute;left:50%;top:14px;transform:translate(-50%,-10px);background:#fff;border-radius:14px;padding:9px 14px;font-size:13px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.12);opacity:0;transition:.3s;pointer-events:none;max-width:88%;text-align:center}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+.overlay{position:fixed;inset:0;display:none;z-index:20}
+#battle{background:rgba(30,32,48,.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);align-items:flex-end;justify-content:center}
+#battle.on{display:flex}
+.sheet{width:100%;max-width:460px;background:var(--bg);border-radius:22px 22px 0 0;padding:16px 16px 22px;animation:up .35s ease;max-height:94dvh;overflow:auto}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.foe{display:flex;gap:12px;align-items:center;background:var(--card);border-radius:18px;padding:14px;box-shadow:0 2px 0 var(--line)}
+.foeInfo{flex:1;min-width:0}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.chip{font-size:11px;font-weight:700;color:#fff;border-radius:999px;padding:2px 8px}
+.chip.ghost{background:#eee;color:var(--sub)}
+.bname{font-weight:800;font-size:16px;line-height:1.35;word-break:break-all}
+.hp{height:10px;border-radius:9px;background:#eee;overflow:hidden;margin-top:8px}
+.hp i{display:block;height:100%;background:var(--accent);border-radius:9px;transition:width .5s}
+.hp.me i{background:var(--good)}
+#mon{width:110px;height:110px;image-rendering:pixelated;flex-shrink:0}
+.mine{display:flex;align-items:center;gap:10px;margin:12px 4px 0;font-size:12px;color:var(--sub);font-weight:700}
+.mine .hp{flex:1;margin:0}
+.msg{background:var(--card);border-radius:16px;padding:14px 16px 18px;margin-top:12px;min-height:76px;font-size:15px;line-height:1.7;white-space:pre-wrap;position:relative;cursor:pointer;box-shadow:0 2px 0 var(--line)}
+.msg .more{position:absolute;right:14px;bottom:6px;color:var(--accent);font-size:12px;animation:bob .5s infinite alternate}
+@keyframes bob{to{transform:translateY(3px)}}
+.acts{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.acts .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.act{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:12px 14px;text-align:left;font-size:14px;color:var(--ink);line-height:1.45}
+.act:active{border-color:var(--accent)}
+.act.main{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:700}
+.act small{display:block;color:var(--sub);font-size:11px;margin-top:3px}
+.act.main small{color:#c9cbd6}
+.kind{display:inline-block;font-size:10px;font-weight:700;border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:2px;background:#fde6dc;color:#c95f43}
+.kind.cope{background:#dcefe8;color:#2f7a63}
+.sectionLabel{font-size:12px;color:var(--sub);font-weight:700;margin:4px 2px}
+.shake{animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+.vanish{transition:.8s;opacity:0;transform:scale(.3) rotate(20deg)}
+#note{background:var(--bg);overflow:auto}
+#note.on{display:block}
+.nwrap{max-width:460px;margin:0 auto;padding:0 14px 40px}
+.nhead{position:sticky;top:0;background:var(--bg);padding:12px 0 10px;display:flex;align-items:center;gap:8px;z-index:2}
+.tabs{display:flex;gap:4px;flex:1;background:#ebe6da;border-radius:999px;padding:3px}
+.tab{flex:1;border:none;background:transparent;border-radius:999px;padding:8px 4px;font-size:13px;font-weight:700;color:var(--sub)}
+.tab.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.x{border:none;background:#fff;border-radius:999px;width:36px;height:36px;font-size:18px;color:var(--sub)}
+.lead{font-size:13px;color:var(--sub);line-height:1.7;margin:4px 2px 12px}
+.pack{background:var(--card);border-radius:16px;padding:14px;margin-bottom:10px;box-shadow:0 2px 0 var(--line);border-left:6px solid #ccc;cursor:pointer}
+.pack h3{margin:4px 0 6px;font-size:15px;word-break:break-all}
+.pack .meta{font-size:11px;color:var(--sub)}
+.pack ul{margin:8px 0 0;padding:0;list-style:none}
+.pack li{font-size:13px;padding:5px 0;border-top:1px dashed var(--line);word-break:break-all}
+.add{width:100%;border:2px dashed #d6cfbf;background:transparent;border-radius:16px;padding:14px;font-size:14px;font-weight:700;color:var(--sub);margin-bottom:14px}
+.card{background:var(--card);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 0 var(--line)}
+.card h4{margin:0 0 8px;font-size:14px}
+label{display:block;font-size:12px;font-weight:700;color:var(--sub);margin:10px 0 4px}
+input,select,textarea{font-family:inherit;font-size:16px;width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:#fdfcf9;color:var(--ink)}
+textarea{resize:vertical}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.btn{border:none;border-radius:12px;padding:12px 16px;font-size:14px;font-weight:700;background:var(--ink);color:#fff;margin-top:12px}
+.btn.sub{background:#ebe6da;color:var(--ink)}
+.btn.danger{background:transparent;color:#c0453a;border:1.5px solid #e6b4ae}
+.skillItem{display:flex;gap:8px;align-items:flex-start;padding:9px 0;border-top:1px dashed var(--line);font-size:13px;line-height:1.5}
+.skillItem .t{flex:1;word-break:break-all}
+.skillItem small{color:var(--sub);font-size:11px}
+.mini{border:1.5px solid var(--line);background:#fff;border-radius:9px;padding:4px 8px;font-size:12px;color:var(--sub);white-space:nowrap}
+.mini.go{border-color:var(--good);color:var(--good)}
+.stat{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px dashed var(--line);font-size:13px}
+.stat:first-of-type{border-top:none}
+.empty{font-size:13px;color:var(--sub);padding:4px 0}
+.notice{font-size:11px;color:var(--sub);background:#efeadf;border-radius:10px;padding:8px 10px;margin-bottom:12px;line-height:1.6}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;font-weight:700}
+.toggle input{width:auto;transform:scale(1.3)}
+#intro{position:fixed;inset:0;z-index:30;display:none;background:radial-gradient(circle at 50% 30%,#3d4268,#15172a 72%);color:#fff;align-items:center;justify-content:center;padding:24px;overflow:auto}
+#intro.on{display:flex}
+#introBody{width:100%;max-width:420px;text-align:center}
+@keyframes fin{from{opacity:0;transform:translateY(8px)}}
+@keyframes blink{50%{opacity:.15}}
+.ititle{font-size:32px;font-weight:800;letter-spacing:2px;margin:0 0 6px;animation:fin 1.2s}
+.isub{font-size:13px;opacity:.6;margin:0;animation:fin 1.6s}
+.iline{font-size:18px;line-height:2.1;white-space:pre-wrap;animation:fin 1s ease;margin:0}
+.tap{font-size:12px;opacity:.5;margin-top:34px;animation:blink 1.8s infinite}
+.iq{font-size:17px;font-weight:700;line-height:1.8;white-space:pre-wrap;margin:0 0 18px;animation:fin .6s}
+.ihelp{font-size:12px;opacity:.6;margin:-8px 0 14px;line-height:1.6}
+#intro textarea,#intro input,#intro select{background:rgba(255,255,255,.96);border:none;text-align:left}
+.ichoices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ichoice{border-radius:14px;padding:15px 8px;font-size:14px;font-weight:700;background:rgba(255,255,255,.08);color:#fff;border:2px solid var(--c)}
+.ichoice:active{background:var(--c)}
+.ibtn{margin-top:14px;width:100%;border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:700;background:var(--accent);color:#fff}
+.ibtn.ghost{background:rgba(255,255,255,.12)}
+.ibtn:disabled{opacity:.35}
+.ipreview{width:120px;height:120px;image-rendering:pixelated;margin:4px auto 10px;display:block;animation:fin 1s}
+.istars{display:flex;gap:8px;justify-content:center}
+.istars button{width:52px;height:52px;border-radius:14px;border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#f2b84b;font-size:15px;font-weight:800}
+.ilist{list-style:none;padding:0;margin:0 0 12px;text-align:left}
+.ilist li{background:rgba(255,255,255,.1);border-radius:12px;padding:10px 12px;margin-bottom:6px;font-size:14px;line-height:1.5;word-break:break-all}
+.irow{display:flex;gap:8px;margin-top:8px}.irow>*{flex:1}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">悩みモンスター</div>
+  <div class="me"><span class="lv" id="lv">Lv1</span><div class="bars"><div class="bar hp"><i id="hpBar"></i></div><div class="bar exp"><i id="expBar"></i></div></div></div>
+  <button class="pill" id="noteBtn">ノート</button>
+</header>
+<div id="mapWrap">
+  <canvas id="map"></canvas>
+  <div id="toast"></div>
+  <div id="hint">行きたい方向をタップ。押しっぱなしで歩き続けます</div>
+</div>
+
+<div id="battle" class="overlay"><div class="sheet">
+  <div class="foe">
+    <div class="foeInfo">
+      <div class="chips"><span class="chip" id="bCat"></span><span class="chip ghost" id="bOwner"></span></div>
+      <div class="bname" id="bName"></div>
+      <div class="hp"><i id="bHp"></i></div>
+    </div>
+    <canvas id="mon" width="96" height="96"></canvas>
+  </div>
+  <div class="mine"><span>こころのHP</span><div class="hp me"><i id="bMyHp"></i></div><span id="bMyTxt"></span></div>
+  <div class="msg" id="msg"></div>
+  <div class="acts" id="acts"></div>
+</div></div>
+
+<div id="note" class="overlay"><div class="nwrap" id="noteBody"></div></div>
+
+<div id="intro"><div id="introBody"></div></div>
+<script>
+// ===== 基本 =====
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9);
+const rint=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const clone=o=>JSON.parse(JSON.stringify(o));
+const short=(t,n=16)=>[...t].length>n?[...t].slice(0,n).join('')+'…':t;
+const stars=n=>'★'.repeat(n);
+
+const PAL=['#e5738f','#7f8fd6','#e39a45','#45a39b','#9a72c9','#5d93bf','#d0694f','#6aa36f'];
+const colOf=p=>PAL[hash(p.name)%PAL.length];
+const maxHp=lv=>30+lv*8, need=lv=>lv*15+10, monHp=p=>20+p.pain*12;
+const sk=(name,kind,power)=>({id:uid(),name,kind,power,uses:0});
+
+
+// ===== 保存 =====
+const KEY='nayami-monster-v3';
+function def(){return{
+  player:{lv:1,exp:0,hp:maxHp(1),x:14.5,y:11.5},
+  packs:[],introDone:false,
+  wins:0
+}}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.player&&s.packs)return s}catch(e){}return def()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+let S=load();const P=S.player;
+let mode='field';
+
+// ===== マップ（はじまりの町 と こころの小道） =====
+const MAP=[
+"TTTTTTTTTTTTTTTTTTTT",
+"TTTTTTTTs..TTTTTTTTT",
+"TTggggg.....ggggggTT",
+"TTggggg.....ggggggTT",
+"TTggggg..TT.ggggggTT",
+"TT.......TT.......TT",
+"TT####.....########T",
+"TT..........gggggTTT",
+"TTggggggg...gggggTTT",
+"TTggggggg...gggggTTT",
+"TTggggggg.....TT..TT",
+"TT............TT..TT",
+"TT...gggggg.......TT",
+"TT...gggggg..gggg.TT",
+"TT...gggggg..gggg.TT",
+"TT###########..###TT",
+"TT.ggggg.......gggTT",
+"TT.ggggg..TT...gggTT",
+"TT.ggggg..TT...gggTT",
+"TT.............gggTT",
+"TTTTTTT......TTTTTTT",
+"TTTTTTTT....TTTTTTTT",
+"TTTTTTTT....TTTTTTTT",
+"T..................T",
+"T..BBB......BBB....T",
+"T..BBB......BBB....T",
+"T..BhB.s....BnB....T",
+"T..................T",
+"T.ffff....BBBBB....T",
+"T.ffff....BBBBB....T",
+"T.........BBlBB....T",
+"T..................T",
+"T..####....wwwww...T",
+"T..ffff....wwwww...T",
+"T..........wwwww...T",
+"TTTTTTTTTTTTTTTTTTTT"];
+const W=20,H=MAP.length,TS=46,TOWN_Y=22,START={x:4.5,y:27.5};
+const T=MAP.map(r=>[...r]);
+const BUILDINGS=[
+  {x:3,y:24,w:3,h:3,roof:'#ef7b5c',label:'おうち（休める）'},
+  {x:12,y:24,w:3,h:3,roof:'#5d93bf',label:'となりの家'},
+  {x:10,y:28,w:5,h:3,roof:'#45a39b',label:'研究所（ノート）'}];
+const SOLID=new Set(['T','B','#','w','s','n']);
+function srng(seed){return()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296}}
+const solid=(x,y)=>x<0||y<0||x>=W||y>=H||SOLID.has(T[y][x]);
+function canAt(x,y){const r=.28;return!solid(Math.floor(x-r),Math.floor(y-r))&&!solid(Math.floor(x+r),Math.floor(y-r))&&!solid(Math.floor(x-r),Math.floor(y+r))&&!solid(Math.floor(x+r),Math.floor(y+r))}
+if(S.mapV!==3||!canAt(P.x,P.y)){P.x=START.x;P.y=START.y;S.mapV=3}
+
+// ===== 描画 =====
+const cv=$('#map'),ctx=cv.getContext('2d');let VW=0,VH=0,dpr=1;
+function resize(){dpr=window.devicePixelRatio||1;VW=cv.clientWidth;VH=cv.clientHeight;cv.width=VW*dpr;cv.height=VH*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}
+addEventListener('resize',resize);
+let face={x:0,y:1},target=null;
+function cam(){let cx=P.x*TS-VW/2,cy=P.y*TS-VH/2;cx=Math.max(0,Math.min(cx,W*TS-VW));cy=Math.max(0,Math.min(cy,H*TS-VH));if(W*TS<VW)cx=(W*TS-VW)/2;return{cx,cy}}
+function circ(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill()}
+function pillText(t,x,y,bg,fg){ctx.font='700 12px "M PLUS Rounded 1c",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';const w=ctx.measureText(t).width+18;ctx.fillStyle=bg;rr(x-w/2,y-11,w,22,11);ctx.fill();ctx.fillStyle=fg;ctx.fillText(t,x,y+1)}
+function draw(){
+  const{cx,cy}=cam();ctx.fillStyle='#f1ecdc';ctx.fillRect(0,0,VW,VH);
+  const x0=Math.max(0,Math.floor(cx/TS)),y0=Math.max(0,Math.floor(cy/TS)),x1=Math.min(W-1,Math.ceil((cx+VW)/TS)),y1=Math.min(H-1,Math.ceil((cy+VH)/TS));
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+    const sx=x*TS-cx,sy=y*TS-cy,t=T[y][x];
+    if(t==='.'&&(x*7+y*13)%5===0)circ(sx+TS*.3,sy+TS*.6,2,'#e2d9c4');
+    if(t==='g'){ctx.fillStyle='#a8d48f';ctx.fillRect(sx,sy,TS+.5,TS+.5);ctx.strokeStyle='#5f9a4f';ctx.lineWidth=2;ctx.lineCap='round';
+      [[.25,.4],[.7,.32],[.45,.8],[.85,.82]].forEach(([a,b],k)=>{if((x+y+k)%3===2)return;const px=sx+a*TS,py=sy+b*TS;ctx.beginPath();ctx.moveTo(px-5,py-6);ctx.lineTo(px-1,py);ctx.lineTo(px+1,py-9);ctx.lineTo(px+2,py);ctx.lineTo(px+6,py-5);ctx.stroke()})}
+    if(t==='f'){['#ef7b5c','#f2b84b','#e5738f','#ffffff'].forEach((c,k)=>{const fx=sx+TS*(.25+(k%2)*.5),fy=sy+TS*(.3+Math.floor(k/2)*.45);circ(fx,fy,4.5,c);circ(fx,fy,1.8,'#f2b84b')})}
+    if(t==='T'){ctx.fillStyle='rgba(0,0,0,.08)';ctx.beginPath();ctx.ellipse(sx+TS/2,sy+TS*.86,TS*.34,TS*.1,0,0,7);ctx.fill();
+      ctx.fillStyle='#8a6a4f';ctx.fillRect(sx+TS*.44,sy+TS*.55,TS*.12,TS*.3);circ(sx+TS/2,sy+TS*.42,TS*.34,'#5f9a6c');circ(sx+TS*.42,sy+TS*.34,TS*.14,'#7cb486')}
+    if(t==='#'){ctx.fillStyle='#c9a77c';ctx.fillRect(sx,sy+TS*.45,TS+.5,5);ctx.fillRect(sx,sy+TS*.65,TS+.5,5);ctx.fillStyle='#a8845a';ctx.fillRect(sx+TS*.2,sy+TS*.3,6,TS*.5);ctx.fillRect(sx+TS*.7,sy+TS*.3,6,TS*.5)}
+    if(t==='w'){ctx.fillStyle='#86bfe0';ctx.fillRect(sx,sy,TS+.5,TS+.5);ctx.fillStyle='rgba(255,255,255,.55)';const o=(performance.now()/400+x)%6;ctx.fillRect(sx+6+o,sy+12,12,2);ctx.fillRect(sx+22-o,sy+30,12,2)}
+    if(t==='s'){ctx.fillStyle='#8a6a4f';ctx.fillRect(sx+TS*.46,sy+TS*.45,5,TS*.45);ctx.fillStyle='#d9b98a';rr(sx+TS*.18,sy+TS*.2,TS*.64,TS*.34,5);ctx.fill();ctx.fillStyle='#8a6a4f';ctx.fillRect(sx+TS*.28,sy+TS*.32,TS*.44,2);ctx.fillRect(sx+TS*.28,sy+TS*.42,TS*.3,2)}
+  }
+  BUILDINGS.forEach(b=>{
+    const sx=b.x*TS-cx,sy=b.y*TS-cy,w=b.w*TS,h=b.h*TS;
+    if(sx>VW||sy>VH||sx+w<0||sy+h<0)return;
+    ctx.fillStyle='rgba(0,0,0,.1)';ctx.beginPath();ctx.ellipse(sx+w/2,sy+h-2,w*.52,10,0,0,7);ctx.fill();
+    ctx.fillStyle='#fffdf7';ctx.fillRect(sx+6,sy+h*.4,w-12,h*.6-4);
+    ctx.fillStyle=b.roof;ctx.beginPath();ctx.moveTo(sx,sy+h*.46);ctx.lineTo(sx+w*.16,sy+6);ctx.lineTo(sx+w*.84,sy+6);ctx.lineTo(sx+w,sy+h*.46);ctx.closePath();ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(sx+w*.16,sy+6,w*.68,6);
+    for(let i=0;i<b.w;i++){const tx=b.x+i,t=T[b.y+b.h-1][tx],dx=tx*TS-cx;
+      if('hnl'.includes(t)){ctx.fillStyle='#8a6a4f';rr(dx+TS*.3,sy+h-TS*.62,TS*.4,TS*.58,6);ctx.fill();circ(dx+TS*.6,sy+h-TS*.32,2,'#f2b84b')}
+      else if(i%2===0||b.w===3){ctx.fillStyle='#bfe0f0';rr(dx+TS*.28,sy+h-TS*.66,TS*.44,TS*.3,4);ctx.fill()}}
+    if(b.label)pillText(b.label,sx+w/2,sy-6,'rgba(255,255,255,.92)','#2b2d42');
+  });
+  const n=S.packs.length;
+  pillText(n?`↑ こころの小道（草むらに ${n}体）`:'↑ こころの小道',10*TS-cx,(TOWN_Y-.4)*TS-cy,n?'#5f9a4f':'rgba(255,255,255,.92)',n?'#fff':'#5f9a4f');
+  if(target){ctx.strokeStyle='rgba(239,123,92,.6)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(target.x,target.y,14,0,7);ctx.stroke()}
+  const px=P.x*TS-cx,py=P.y*TS-cy,bob=moving?Math.sin(performance.now()/90)*1.5:0;
+  ctx.fillStyle='rgba(0,0,0,.15)';ctx.beginPath();ctx.ellipse(px,py+TS*.3,TS*.24,TS*.08,0,0,7);ctx.fill();
+  circ(px,py+bob,TS*.27,'#2b2d42');circ(px,py-TS*.18+bob,TS*.1,'#ef7b5c');
+  const ex=face.x*4,ey=face.y*3;[-5,5].forEach(o=>circ(px+o+ex,py+bob+ey,3,'#fff'));
+  if(T[Math.floor(P.y)][Math.floor(P.x)]==='g'){ctx.strokeStyle='#5f9a4f';ctx.lineWidth=2;[-8,0,8].forEach(o=>{ctx.beginPath();ctx.moveTo(px+o-4,py+TS*.3-5);ctx.lineTo(px+o,py+TS*.3+2);ctx.lineTo(px+o+4,py+TS*.3-5);ctx.stroke()})}
+}
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+
+// ===== 移動 =====
+let dir=null,moving=false,gdist=0,lastTile='',lastZone=-2,saveT=0;const keys={};
+function pointerDir(e){const r=cv.getBoundingClientRect(),{cx,cy}=cam();const mx=e.clientX-r.left,my=e.clientY-r.top;const dx=mx-(P.x*TS-cx),dy=my-(P.y*TS-cy),d=Math.hypot(dx,dy);target={x:mx,y:my};dir=d<10?null:{x:dx/d,y:dy/d}}
+cv.addEventListener('pointerdown',e=>{if(mode!=='field')return;cv.setPointerCapture(e.pointerId);pointerDir(e);$('#hint').style.opacity=0});
+cv.addEventListener('pointermove',e=>{if(target)pointerDir(e)});
+['pointerup','pointercancel'].forEach(ev=>cv.addEventListener(ev,()=>{dir=null;target=null}));
+addEventListener('keydown',e=>{if($('#note').classList.contains('on'))return;keys[e.key]=1;if(e.key.startsWith('Arrow'))e.preventDefault();if((e.key==='Enter'||e.key===' ')&&mode==='battle'){e.preventDefault();advance()}});
+addEventListener('keyup',e=>{keys[e.key]=0});
+function update(dt){
+  let d=dir;const kx=(keys.ArrowRight?1:0)-(keys.ArrowLeft?1:0),ky=(keys.ArrowDown?1:0)-(keys.ArrowUp?1:0);
+  if(kx||ky){const n=Math.hypot(kx,ky);d={x:kx/n,y:ky/n}}
+  moving=false;if(mode!=='field'||!d)return;
+  face=d;const sp=3.6*dt,ox=P.x,oy=P.y;
+  let blocked=false;if(canAt(P.x+d.x*sp,P.y))P.x+=d.x*sp;else blocked=true;if(canAt(P.x,P.y+d.y*sp))P.y+=d.y*sp;else blocked=true;
+  if(blocked)bump(d);
+  const moved=Math.hypot(P.x-ox,P.y-oy);moving=moved>0;
+  const tx=Math.floor(P.x),ty=Math.floor(P.y),key=tx+','+ty;
+  if(key!==lastTile){lastTile=key;onTile(tx,ty)}
+  if(T[ty][tx]==='g'){gdist+=moved;if(gdist>1.3){gdist=0;if(Math.random()<.17)encounter()}}
+  saveT+=dt;if(saveT>1){saveT=0;save()}
+}
+let lastRoute=P.y<TOWN_Y,bumpT=0;
+function onTile(x,y){
+  const t=T[y][x],inRoute=y<TOWN_Y;
+  if(inRoute!==lastRoute){lastRoute=inRoute;toast(inRoute?(S.packs.length?'こころの小道。草むらに 悩みモンスターが ひそんでいる':'こころの小道。まだ モンスターは いないみたい'):'はじまりの町にもどってきた')}
+  if(t==='h'){P.hp=maxHp(P.lv);hud();toast('おうちで ひとやすみ。こころのHPが回復した');save()}
+  if(t==='l'){P.y+=.8;lastTile='';openNote('list')}
+}
+function bump(d){
+  const now=performance.now();if(now-bumpT<2500)return;
+  const tx=Math.floor(P.x+d.x*.5),ty=Math.floor(P.y+d.y*.5),t=T[ty]&&T[ty][tx];
+  if(t==='s'){bumpT=now;toast(ty<TOWN_Y?'看板：この先は まだ 道が つづいていない':'看板：はじまりの町 ― 悩みモンスターと 向き合う人たちの町')}
+  if(t==='n'){bumpT=now;toast('となりの家。いまは 留守のようだ')}
+}
+let toastT;function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('on'),2200)}
+function hud(){$('#lv').textContent='Lv'+P.lv;$('#hpBar').style.width=Math.max(0,P.hp/maxHp(P.lv)*100)+'%';$('#expBar').style.width=(P.exp/need(P.lv)*100)+'%'}
+let last=performance.now();
+function loop(t){const dt=Math.min(.05,(t-last)/1000);last=t;update(dt);draw();requestAnimationFrame(loop)}
+
+// ===== モンスターの姿（名前から生成） =====
+function hash(s){let h=2166136261;for(const ch of s){h^=ch.codePointAt(0);h=Math.imul(h,16777619)>>>0}return h}
+function lighten(hex,a){const n=parseInt(hex.slice(1),16);const f=v=>Math.round(v+(255-v)*a);return`rgb(${f(n>>16)},${f(n>>8&255)},${f(n&255)})`}
+function drawMonster(name,col,cvs){
+  const c=(cvs||$('#mon')).getContext('2d');c.clearRect(0,0,96,96);
+  const r=srng(hash(name)),N=12,g=[],spot=[];
+  for(let y=0;y<N;y++){g[y]=[];spot[y]=[];for(let x=0;x<6;x++){const dx=(x-5.5)/(3.6+r()*1.4),dy=(y-6)/(4.6+r()*1.2);g[y][x]=dx*dx+dy*dy<1?r()<.93:(r()<.18&&y>1);spot[y][x]=r()<.2}}
+  for(let y=3;y<=8;y++)for(let x=3;x<6;x++)g[y][x]=true;
+  const f=(x,y)=>y>=0&&y<N&&x>=0&&x<N&&g[y][x<6?x:11-x];
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){if(!f(x,y))continue;const edge=!f(x-1,y)||!f(x+1,y)||!f(x,y-1)||!f(x,y+1);
+    c.fillStyle=edge?'#2b2d42':(spot[y][x<6?x:11-x]?lighten(col,.45):col);c.fillRect(x*8,y*8,8,8)}
+  [[3,4,'#fff'],[4,4,'#2b2d42'],[8,4,'#fff'],[7,4,'#2b2d42'],[3,5,'#fff'],[8,5,'#fff'],[4,7,'#2b2d42'],[5,8,'#2b2d42'],[6,8,'#2b2d42'],[7,7,'#2b2d42']].forEach(([x,y,k])=>{c.fillStyle=k;c.fillRect(x*8,y*8,8,8)});
+}
+
+// ===== メッセージ =====
+const msgEl=$('#msg');let nextFn=null,finFn=null;
+function say(text,wait=true){return new Promise(res=>{
+  msgEl.innerHTML='';const sp=document.createElement('span');msgEl.appendChild(sp);const ch=[...text];let i=0,done=false;
+  const fin=()=>{if(done)return;done=true;clearInterval(t);sp.textContent=text;finFn=null;
+    if(wait){const m=document.createElement('span');m.className='more';m.textContent='タップで次へ ▼';msgEl.appendChild(m);nextFn=()=>{nextFn=null;res()}}else res()};
+  finFn=fin;const t=setInterval(()=>{i+=2;sp.textContent=ch.slice(0,i).join('');if(i>=ch.length)fin()},28);
+})}
+function advance(){if(finFn)return finFn();if(nextFn)nextFn()}
+msgEl.addEventListener('click',advance);
+const acts=$('#acts');
+function setActs(groups){
+  acts.innerHTML='';let locked=false;
+  groups.forEach(g=>{
+    if(g.label){const l=document.createElement('div');l.className='sectionLabel';l.textContent=g.label;acts.appendChild(l)}
+    const box=document.createElement('div');if(g.grid)box.className='grid';else{box.style.display='flex';box.style.flexDirection='column';box.style.gap='8px'}
+    g.items.forEach(it=>{const b=document.createElement('button');b.className='act'+(it.main?' main':'');b.innerHTML=it.html;
+      b.onclick=()=>{if(locked)return;locked=true;it.fn()};box.appendChild(b)});
+    acts.appendChild(box);
+  });
+}
+const clearActs=()=>{acts.innerHTML=''};
+const kindTag=s=>`<span class="kind ${s.kind==='対処法'?'cope':''}">${s.kind}</span>`;
+
+// ===== バトル =====
+function candidates(){return S.packs}
+let B=null;
+function bRender(){$('#bHp').style.width=Math.max(0,B.hp/B.max*100)+'%';$('#bMyHp').style.width=Math.max(0,P.hp/maxHp(P.lv)*100)+'%';$('#bMyTxt').textContent=`${Math.max(0,P.hp)}/${maxHp(P.lv)}`;hud()}
+async function encounter(){
+  const list=candidates();if(!list.length)return;
+  const p=pick(list);mode='battle';dir=null;target=null;
+  B={p,hp:monHp(p),max:monHp(p),last:null};
+  const c={n:'悩みモンスター',col:colOf(p)};$('#bCat').textContent=c.n;$('#bCat').style.background=c.col;
+  $('#bOwner').textContent=p.desc?short(p.desc,18):'あなたの悩みモンスター';
+  $('#bName').textContent=p.name;drawMonster(p.name,c.col);$('#mon').classList.remove('vanish');
+  bRender();clearActs();$('#battle').classList.add('on');
+  await say(`${p.name}が あらわれた！`);
+  if(p.whispers.length)await say(`「${pick(p.whispers)}」`);
+  menu();
+}
+function menu(){
+  say('どうする？',false);
+  setActs([{grid:true,items:[
+    {main:true,html:'むきあう<small>このなやみの わざで</small>',fn:skillMenu},
+    {html:'にげる<small>今日はここまで</small>',fn:runAway}]}]);
+}
+function skillMenu(){
+  const sks=B.p.skills;
+  if(!sks.length){const pid=B.p.id;(async()=>{clearActs();await say('このなやみの わざが まだ ない！\nノートで、このなやみ専用の言葉や対処法を書き足そう。');
+    setActs([{grid:true,items:[{main:true,html:'ノートを開く<small>わざを書き足す</small>',fn:()=>{endBattle();openNote('edit',pid)}},{html:'にげる',fn:runAway}]}]);})();return}
+  say('どの わざを つかう？',false);
+  setActs([{label:'このモンスターへの わざ',items:sks.map(s=>({html:`${kindTag(s)}${esc(s.name)}<small>ききめ ${stars(s.power)}　つかった回数 ${s.uses}</small>`,fn:()=>useSkill(s)}))},
+    {items:[{html:'もどる',fn:menu}]}]);
+}
+async function useSkill(s){
+  clearActs();
+  await say(s.kind==='言葉'?`じぶんに いいきかせた。\n「${s.name}」`:`${s.name}\nを やってみた！`);
+  let dmg=s.power*8+rint(0,6)+P.lv*2+Math.floor(s.uses/3);
+  const crit=Math.random()<(s.power===3?.3:.12);if(crit)dmg=Math.round(dmg*1.6);
+  s.uses++;B.last=s;
+  const m=$('#mon');m.classList.remove('shake');void m.offsetWidth;m.classList.add('shake');
+  B.hp-=dmg;bRender();await sleep(450);
+  if(crit)await say('こうかは ばつぐんだ！');
+  if(s.uses%5===0)await say(`「${short(s.name)}」が手になじんできた！\nいりょくが あがった。`);
+  save();if(B.hp<=0)return win();
+  const w=B.p.whispers.length?pick(B.p.whispers):'……';
+  await say(`${B.p.name}の ささやき！\n「${w}」`);
+  P.hp-=B.p.pain*2+rint(1,5);
+  const box=$('.mine');box.classList.remove('shake');void box.offsetWidth;box.classList.add('shake');bRender();await sleep(400);save();
+  if(P.hp<=0)return lose();
+  menu();
+}
+async function win(){
+  $('#mon').classList.add('vanish');
+  await say(`${B.p.name}は\nおとなしくなった。`);
+  await say('すこし なかよく なれた気がする。');
+  B.p.defeated=(B.p.defeated||0)+1;S.wins=(S.wins||0)+1;
+  if(B.last)await say(`きめての わざ：\n「${short(B.last.name,22)}」`);
+  const gain=B.p.pain*8+6;P.exp+=gain;await say(`${gain} けいけんちを てにいれた！`);
+  while(P.exp>=need(P.lv)){P.exp-=need(P.lv);P.lv++;P.hp=maxHp(P.lv);bRender();await say(`レベル${P.lv}に あがった！\nこころのHPが ${maxHp(P.lv)}に ふえた。`)}
+  save();bRender();
+  endBattle();
+}
+async function lose(){
+  await say('こころが つかれてしまった…');
+  await say('むりは しないで。\nおうちに もどって 休もう。');
+  P.x=START.x;P.y=START.y;P.hp=maxHp(P.lv);save();endBattle();
+}
+async function runAway(){clearActs();await say('うまく にげきれた！\nにげるのも りっぱな たいしょほう。');endBattle()}
+function endBattle(){$('#battle').classList.remove('on');B=null;mode='field';hud();lastZone=-2}
+
+// ===== ノート（自己分析ページ） =====
+const note=$('#note'),nb=$('#noteBody');let nView='list',draft=null;
+$('#noteBtn').onclick=()=>{if(mode==='field')openNote('list')};
+function openNote(v,id){mode='note';dir=null;target=null;nView=v;draft=null;
+  if(v==='edit'){const p=S.packs.find(x=>x.id===id);draft=p?clone(p):{id:null,cat:0,name:'',desc:'',pain:3,whispers:[],skills:[],defeated:0}}
+  renderNote();note.classList.add('on');note.scrollTop=0}
+function closeNote(){note.classList.remove('on');mode='field';save();hud()}
+function head(){const t=(k,l)=>`<button class="tab ${nView===k||(k==='list'&&nView==='edit')?'on':''}" data-a="view" data-v="${k}">${l}</button>`;
+  return`<div class="nhead"><div class="tabs">${t('list','わたしのモンスター')}${t('rec','きろく')}</div><button class="x" data-a="close">×</button></div>`}
+function packCard(p,own){const c={col:colOf(p)};
+  return`<div class="pack" style="border-left-color:${c.col}" ${own?`data-a="edit" data-id="${p.id}"`:''}>
+  
+  <h3>${esc(p.name)}</h3>${p.desc?`<div class="meta" style="margin-bottom:4px;color:var(--ink)">${esc(p.desc)}</div>`:''}<div class="meta">つらさ ${stars(p.pain)}　ささやき ${p.whispers.length}　わざ ${p.skills.length}${own?`　てなずけた ${p.defeated||0}回`:''}</div>
+  <ul>${p.skills.slice(0,own?3:9).map(s=>`<li>${kindTag(s)}${esc(s.name)}</li>`).join('')}${own&&p.skills.length>3?`<li style="color:var(--sub)">ほか ${p.skills.length-3}件</li>`:''}</ul></div>`}
+function renderNote(){
+  let h=head();
+  if(nView==='list'){
+    h+=`<p class="lead">あなたの心の中にいる、悩みモンスターたち。ひとつのモンスターに、それ専用の「ささやき」と「向き合い方（言葉・対処法）」をまとめておくと、バトルでそのわざが使えます。</p>
+    <button class="add" data-a="new">＋ 新しいなやみを書き出す</button>`;
+    h+=S.packs.length?S.packs.map(p=>packCard(p,true)).join(''):'<div class="empty">まだ なやみは ありません。</div>';
+  }else if(nView==='edit'){
+    const d=draft;
+    h+=`<div class="card"><h4>${d.id?'なやみを編集':'新しいなやみ'}</h4>
+    <label>どんな悩み？</label><textarea id="eDesc" rows="2" maxlength="80" placeholder="例：好きな人に振られてしまった">${esc(d.desc||'')}</textarea>
+    <label>モンスターの名前</label><input id="eName" maxlength="24" placeholder="例：フラレモン" value="${esc(d.name)}">
+    <div class="row"><div><label>つらさ</label><select id="ePain">${[1,2,3,4,5].map(n=>`<option value="${n}" ${d.pain===n?'selected':''}>${stars(n)}</option>`).join('')}</select></div></div>
+    <label>あくまの ささやき（1行に1つ）</label><textarea id="eWh" rows="3" placeholder="例：どうせ自分なんて">${esc(d.whispers.join('\n'))}</textarea></div>
+    <div class="card"><h4>このなやみの わざ</h4>
+    ${d.skills.length?d.skills.map((s,i)=>`<div class="skillItem"><div class="t">${kindTag(s)}${esc(s.name)}<br><small>ききめ ${stars(s.power)}　つかった ${s.uses}回${s.from?'　みんなから おぼえた':''}</small></div><button class="mini" data-a="delSkill" data-i="${i}">けす</button></div>`).join(''):'<div class="empty">まだ ありません。下から追加しよう。</div>'}
+    <label>言葉・対処法を追加</label><textarea id="sName" rows="2" maxlength="80" placeholder="例：信頼できる人に話を聞いてもらう"></textarea>
+    <div class="row"><select id="sKind"><option value="言葉">言葉</option><option value="対処法">対処法</option></select><select id="sPow"><option value="1">ききめ ★</option><option value="2" selected>ききめ ★★</option><option value="3">ききめ ★★★</option></select></div>
+    <button class="btn sub" data-a="addSkill" style="width:100%">＋ わざを追加</button></div>
+    <div class="row"><button class="btn" data-a="savePack">保存する</button><button class="btn sub" data-a="view" data-v="list">もどる</button></div>
+    ${d.id?'<button class="btn danger" data-a="delPack" style="width:100%">このなやみを けす</button>':''}`;
+
+  }else{
+    const sks=S.packs.flatMap(p=>p.skills.map(s=>({...s,pn:p.name}))).filter(s=>s.uses>0).sort((a,b)=>b.uses-a.uses);
+    h+=`<div class="card"><h4>あなた</h4>
+    <div class="stat"><span>レベル</span><b>${P.lv}</b></div><div class="stat"><span>次のレベルまで</span><b>${need(P.lv)-P.exp}</b></div>
+    <div class="stat"><span>てなずけた なやみ</span><b>${S.wins||0}回</b></div></div>
+    <div class="card"><h4>よく使ったわざ ＝ あなたの力</h4>${sks.length?sks.slice(0,8).map((s,i)=>`<div class="stat"><span>${i+1}. ${esc(short(s.name,20))}<br><small style="color:var(--sub)">${esc(s.pn)}</small></span><b>${s.uses}回</b></div>`).join(''):'<div class="empty">戦うとたまっていきます。</div>'}</div>
+    
+    <button class="btn danger" data-a="reset" style="width:100%">最初からやりなおす</button>`;
+  }
+  nb.innerHTML=h;
+}
+function syncDraft(){if(nView!=='edit')return;draft.name=$('#eName').value;draft.desc=$('#eDesc').value.trim();draft.pain=+$('#ePain').value;draft.whispers=$('#eWh').value.split('\n').map(s=>s.trim()).filter(Boolean)}
+function confirmBtn(b,l='本当に？'){if(b.dataset.ok!=='1'){b.dataset.ok='1';b.textContent=l;return false}return true}
+nb.addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
+  if(a==='close')return closeNote();
+  if(a==='view'){nView=b.dataset.v;draft=null;renderNote();note.scrollTop=0;return}
+  if(a==='new')return openNote('edit');
+  if(a==='edit')return openNote('edit',b.dataset.id);
+  if(a==='addSkill'){syncDraft();const n=$('#sName').value.trim();if(!n){$('#sName').focus();return}
+    draft.skills.push(sk(n,$('#sKind').value,+$('#sPow').value));renderNote();return}
+  if(a==='delSkill'){syncDraft();draft.skills.splice(+b.dataset.i,1);renderNote();return}
+  if(a==='savePack'){syncDraft();let n=draft.name.trim();if(!n){$('#eName').focus();return}
+    draft.name=n;
+    if(draft.id){const i=S.packs.findIndex(p=>p.id===draft.id);S.packs[i]=draft}else{draft.id=uid();S.packs.push(draft)}
+    save();nView='list';draft=null;renderNote();note.scrollTop=0;return}
+  if(a==='delPack'){if(!confirmBtn(b,'本当に けす？'))return;S.packs=S.packs.filter(p=>p.id!==draft.id);save();nView='list';draft=null;renderNote();return}
+  if(a==='reset'){if(!confirmBtn(b,'全部消えます。本当に？'))return;S=def();save();location.reload()}
+});
+
+// ===== 導入 =====
+const intro=$('#intro'),ib=$('#introBody');
+const stage=h=>{ib.innerHTML=h};
+function waitTap(){return new Promise(r=>{setTimeout(()=>{const h=()=>{intro.removeEventListener('click',h);r()};intro.addEventListener('click',h)},350)})}
+async function narr(t,big){stage(big||`<p class="iline">${esc(t)}</p><p class="tap">タップして次へ</p>`);await waitTap()}
+function ask(title,inner,get,help){return new Promise(res=>{
+  stage(`<p class="iq">${esc(title)}</p>${help?`<p class="ihelp">${esc(help)}</p>`:''}${inner}`);
+  ib.onclick=e=>{const b=e.target.closest('[data-go]');if(!b)return;const v=get(b);if(v===null||v===undefined)return;ib.onclick=null;res(v)};
+  const f=ib.querySelector('textarea,input');if(f)setTimeout(()=>f.focus(),400);
+})}
+async function runIntro(){
+  mode='intro';intro.classList.add('on');
+  await narr('',`<h1 class="ititle">悩みモンスター</h1><p class="isub">心の中のモンスターと 向き合う場所</p><p class="tap">タップしてはじめる</p>`);
+  await narr('だれの心の中にも、\n悩みモンスターが すんでいる。');
+  await narr('追い出そうとしても、\nなかなか いなくなってはくれない。\nだから、うまく 付き合っていくしかない。');
+  await narr('この世界は、\n悩みモンスターとの\n「向き合い方」を 考える場所。');
+  await narr('まずは、あなたの心の中にいる\n悩みモンスターを\n教えてください。');
+  const val=id=>{const el=$(id),v=el.value.trim();if(!v){el.focus();return null}return v};
+  const desc=await ask(`いま、どんなことに 悩んでいる？`,`<textarea id="iIn" rows="3" maxlength="80" placeholder="例：好きな人に振られてしまった"></textarea><button class="ibtn" data-go>つぎへ</button>`,()=>val('#iIn'));
+  const name=await ask('その悩みに 名前をつけるとしたら、\nどんなモンスター？',`<input id="iIn" maxlength="24" placeholder="例：フラレモン"><button class="ibtn" data-go>名前をつける</button>`,()=>val('#iIn'),'見た目は、名前から生まれます');
+  stage(`<canvas class="ipreview" id="iMon" width="96" height="96"></canvas><p class="iline">${esc(name)}…\nこんな姿を しているみたい。</p><p class="tap">タップして次へ</p>`);
+  drawMonster(name,colOf({name}),$('#iMon'));await waitTap();
+  const whispers=await ask(`${name}は、\nあなたに どんなことを ささやいてくる？`,`<textarea id="iIn" rows="4" placeholder="例：どうせ自分なんて&#10;もう誰にも好かれないよ"></textarea><button class="ibtn" data-go>つぎへ</button>`,()=>$('#iIn').value.split('\n').map(x=>x.trim()).filter(Boolean),'1行に1つ。思いつかなければ、空のままでも大丈夫');
+  const pain=await ask('そのモンスターは、\nどれくらい手ごわい？',`<div class="istars">${[1,2,3,4,5].map(n=>`<button data-go data-v="${n}">${n}</button>`).join('')}</div><p class="ihelp" style="margin-top:12px">1：ちょっと気になる 〜 5：とてもつらい</p>`,b=>+b.dataset.v);
+  const skills=await new Promise(res=>{
+    const list=[];
+    const render=()=>{stage(`<p class="iq">${esc(name)}と、どう向き合う？\n言葉でも、工夫でも。</p>
+      <p class="ihelp">心の支えになる言葉や、試してみたい対処法を書いてください。これがバトルの「わざ」になります。</p>
+      ${list.length?`<ul class="ilist">${list.map(s=>`<li>${kindTag(s)}${esc(s.name)}</li>`).join('')}</ul>`:''}
+      <textarea id="iIn" rows="2" maxlength="80" placeholder="例：信頼できる人に話を聞いてもらう"></textarea>
+      <div class="irow"><select id="iKind"><option value="対処法">対処法</option><option value="言葉">言葉</option></select><button class="ibtn ghost" data-add style="margin-top:0">＋ 追加</button></div>
+      <button class="ibtn" data-done ${list.length?'':'disabled'}>${list.length?`この ${list.length}つの わざで 会いに行く`:'わざを1つ以上 追加してね'}</button>`);
+      setTimeout(()=>$('#iIn')&&$('#iIn').focus(),300)};
+    ib.onclick=e=>{
+      if(e.target.closest('[data-add]')){const v=$('#iIn').value.trim();if(!v){$('#iIn').focus();return}list.push(sk(v,$('#iKind').value,2));render()}
+      else if(e.target.closest('[data-done]')&&list.length){ib.onclick=null;res(list)}
+    };
+    render();
+  });
+  S.packs.push({id:uid(),name,desc,pain,whispers,skills,defeated:0});S.introDone=true;save();
+  await narr(`${name}が、\n町の北にある「こころの小道」の\n草むらに あらわれるようになった。`);
+  await narr('会いに行って、向き合ってみよう。\n\nモンスターは「ノート」から\nいつでも 増やせるよ。');
+  intro.classList.remove('on');mode='field';hud();
+  toast('北の草むらへ 行ってみよう');
+}
+
+// ===== 開始 =====
+resize();hud();requestAnimationFrame(loop);
+if(!S.packs.length&&!S.introDone)runIntro();else setTimeout(()=>toast(S.packs.length?'北の草むらへ 行ってみよう':'研究所で モンスターを書き出そう'),600);
+</script>
+</body>
+</html>
